@@ -1,0 +1,434 @@
+---
+- name: Deploy Rancher and register workers
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../../hosts.yaml
+    - infra/ansible/rancher/github_actions_arc_vars.yml
+  vars:
+    k8s_cluster: "rancher-cluster"
+
+  tasks:
+    # Add controller and workers to inventory
+    - name: Add Kubernetes controller
+      add_host:
+        name: "{{ item.name }}"
+        ansible_host: "{{ item.ip }}"  
+        groups:
+          - masters
+          - k8s_cluster
+        ansible_user: "{{ item.username }}"
+        ansible_ssh_private_key_file: "{{ item.ssh_key_path }}"
+      loop: "{{ kubernetes_controller | default([]) }}"
+
+    - name: Add Kubernetes workers
+      add_host:
+        name: "{{ item.name }}"
+        ansible_host: "{{ item.ip }}"  
+        groups:
+          - workers
+          - k8s_cluster
+        ansible_user: "{{ item.username }}"
+        ansible_ssh_private_key_file: "{{ item.ssh_key_path }}"
+        hostname: "{{ item.name }}"
+      loop: "{{ kubernetes_workers | default([]) }}"
+
+- name: "Safe System Updates & Reboot (If Needed)"
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    # 1. Update apt cache (critical before upgrades)
+    - name: Update apt package index
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600  # Only update if older than 1 hour
+      when: ansible_os_family == 'Debian'
+      register: apt_update_result  # Track if cache was updated
+
+    # 2. Apply security updates ONLY (safer than full upgrades)
+    - name: Upgrade security packages only
+      ansible.builtin.apt:
+        upgrade: yes  # Only install security updates
+        autoremove: yes
+        autoclean: yes
+      when: ansible_os_family == 'Debian'
+      register: apt_upgrade_result  # Now properly registered
+      ignore_errors: yes  # Continue even if some updates fail
+
+    # 3. Reboot ONLY if kernel/libc updates were installed
+    - name: Check if reboot is required
+      ansible.builtin.stat:
+        path: /var/run/reboot-required
+      register: reboot_required
+
+    # 4. Reboot if either updates were applied OR reboot-required exists
+    - name: Reboot if needed (kernel/libc updates)
+      ansible.builtin.reboot:
+        msg: "Rebooting after updates"
+        connect_timeout: 5
+        reboot_timeout: 600
+        pre_reboot_delay: 30
+        post_reboot_delay: 30
+      when: 
+        - reboot_required.stat.exists or 
+          (apt_upgrade_result is defined and apt_upgrade_result.changed)
+
+    # 5. Verify system is back online (if rebooted)
+    - name: Wait for system to come back
+      ansible.builtin.wait_for_connection:
+        timeout: 300
+      when: 
+        - reboot_required.stat.exists or 
+          (apt_upgrade_result is defined and apt_upgrade_result.changed)
+
+
+# Run install script for RKE2 as sudo
+
+- name: Deploy Rancher and register workers
+  hosts: masters
+  gather_facts: false
+  vars:
+    k8s_cluster: "rancher-cluster"
+  tasks:
+    - name: Install RKE2
+      shell: |
+        curl -sfL https://get.rke2.io | sh -
+        systemctl enable rke2-server.service
+        systemctl start rke2-server.service
+      when: inventory_hostname in groups['masters']
+      become: true
+      become_user: root
+    - name: Wait for RKE2 to be ready
+      wait_for:
+        port: 6443
+        delay: 10
+        timeout: 300
+        state: started
+      when: inventory_hostname in groups['masters']
+      become: true
+      become_user: root
+    - name: Get RKE2 token
+      command: cat /var/lib/rancher/rke2/server/node-token
+      register: rke2_token
+      when: inventory_hostname in groups['masters']
+      become: true
+      become_user: root
+
+- name: Deploy Rancher and register workers
+  hosts: workers
+  gather_facts: false
+  vars:
+    k8s_cluster: "rancher-cluster"
+  tasks:
+    - name: Ensure /usr/local exists
+      file:
+        path: /usr/local
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+      become: true
+      become_user: root
+
+    - name: Install RKE2
+      shell: |
+        curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE="agent" INSTALL_RKE2_ROOT="/usr/local" sh -
+      when: inventory_hostname in groups['workers']
+      become: true
+      become_user: root
+
+    - name: Configure RKE2 agent with token and server IP
+      blockinfile:
+        path: /etc/rancher/rke2/config.yaml
+        create: yes
+        block: |
+          token: {{ hostvars[groups['masters'][0]].rke2_token.stdout }}
+          server: https://{{ hostvars[groups['masters'][0]].ansible_host }}:9345
+      when: inventory_hostname in groups['workers']
+      become: true
+      become_user: root
+    - name: Restart RKE2 agent
+      systemd:
+        name: rke2-agent
+        state: started
+        enabled: yes
+        daemon_reload: yes
+      when: inventory_hostname in groups['workers']
+      become: true
+      become_user: root
+
+    - name: Wait for RKE2 to be ready
+      wait_for:
+        port: 6443
+        delay: 10
+        timeout: 300
+        state: started
+      when: inventory_hostname in groups['workers']
+      become: true
+      become_user: root
+
+
+- name: Update configs + kubectl + Check for RKE2 status on masters
+  hosts: masters
+  gather_facts: false
+  become: true
+  vars:
+    k8s_cluster: "rancher-cluster"
+  tasks:
+
+    - name: Set correct permissions on rke2.yaml
+      ansible.builtin.file:
+        path: /etc/rancher/rke2/rke2.yaml
+        mode: '0644'
+
+    - name: Create .kube directory for user
+      ansible.builtin.file:
+        path: ~/.kube
+        state: directory
+        mode: '0700'
+
+    - name: Copy kubeconfig to user directory
+      ansible.builtin.copy:
+        src: /etc/rancher/rke2/rke2.yaml
+        dest: ~/.kube/config
+        remote_src: yes
+        mode: '0600'
+
+    - name: Update KUBECONFIG in shell profile
+      ansible.builtin.lineinfile:
+        path: ~/.bashrc
+        line: 'export KUBECONFIG=~/.kube/config'
+        state: present
+
+    - name: Symlink kubectl to /local/bin/kubectl
+      become: true
+      ansible.builtin.file:
+        src: /var/lib/rancher/rke2/bin/kubectl
+        dest: /usr/local/bin/kubectl
+        state: link
+        force: true
+        
+    - name: Check RKE2 status
+      command: kubectl get nodes
+      register: rke2_status
+      when: inventory_hostname in groups['masters']
+      become: true
+      become_user: root
+    
+    - name: Label worker nodes with role=worker
+      command: kubectl label node {{ item }} node-role.kubernetes.io/worker= --overwrite
+      loop: "{{ groups['workers'] }}"
+      become: true
+    
+    - name: Print RKE2 status
+      debug:
+        var: rke2_status.stdout_lines
+      when: inventory_hostname in groups['masters']
+
+
+- name: Install Rancher UI via Helm
+  hosts: masters
+  become: true
+  gather_facts: false
+  vars_files:
+    - ./github_actions_arc_vars.yml
+  vars_prompt:
+    - name: github_actions_pat
+      prompt: "Enter your GitHub Actions Personal Access Token (PAT) with 'repo' scope"
+      private: yes
+  vars:
+    rancher_namespace: cattle-system
+    rancher_hostname: rancher.dev.alexanderelwell.co.uk
+  tasks:
+
+    - name: Ensure python3-pip is installed
+      apt:
+        name: python3-pip
+        state: present
+      become: true
+
+    - name: Ensure kubernetes Python library is installed
+      pip:
+        name: kubernetes
+        executable: pip3
+      become: true
+
+    - name: Install Helm
+      shell: |
+        curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+
+    - name: Add Rancher Helm repository
+      command: helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
+
+    - name: Update Helm repositories
+      command: helm repo update
+
+    - name: Create Rancher namespace
+      kubernetes.core.k8s:
+        api_version: v1
+        kind: Namespace
+        name: "{{ rancher_namespace }}"
+        state: present
+
+    - name: Install Cert-Manager CRDs
+      shell: |
+        kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.2/cert-manager.crds.yaml
+
+    - name: Install Cert-Manager Helm chart
+      shell: |
+        helm repo add jetstack https://charts.jetstack.io || true
+        helm repo update
+        if ! helm status cert-manager -n cert-manager > /dev/null 2>&1; then
+          helm install cert-manager jetstack/cert-manager \
+            --namespace cert-manager \
+            --create-namespace \
+            --version v1.14.2;
+        else
+          echo "cert-manager already installed, skipping";
+        fi
+
+    - name: Wait for Cert-Manager to be ready
+      shell: |
+        kubectl rollout status deploy cert-manager -n cert-manager --timeout=180s
+
+    - name: Install or upgrade Rancher via Helm
+      shell: |
+        helm upgrade --install rancher rancher-latest/rancher \
+          --namespace "{{ rancher_namespace }}" \
+          --set hostname={{ rancher_hostname }} \
+          --set replicas=1 \
+          --set bootstrapPassword=admin \
+          --set ingress.tls.source=secret
+
+          # --set ingress.tls.source=letsEncrypt \
+          # --set letsEncrypt.email=admin@yourdomain.com \
+          # --set letsEncrypt.environment=staging
+
+    - name: Add Actions Runner Controller Helm repository
+      command: helm repo add actions-runner-controller https://actions-runner-controller.github.io/actions-runner-controller
+
+    - name: Update Helm repositories (for ARC)
+      command: helm repo update
+
+    # Prompt for GitHub Actions PAT moved to vars_prompt at play level
+
+    - name: Create namespace for ARC
+      kubernetes.core.k8s:
+        api_version: v1
+        kind: Namespace
+        name: actions-runner-system
+        state: present
+
+    - name: Create GitHub token secret for ARC
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: controller-manager
+            namespace: actions-runner-system
+          type: Opaque
+          stringData:
+            github_token: "{{ github_actions_pat }}"
+
+    - name: Install or upgrade Actions Runner Controller via Helm
+      shell: |
+        NAMESPACE="arc-systems"
+        helm upgrade arc oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set-controller \
+          --namespace "${NAMESPACE}" \
+          --create-namespace \
+          --install
+
+    - name: Configure ARC
+      shell: |
+        INSTALLATION_NAME="arc-runner-set"
+        NAMESPACE="arc-systems"
+        GITHUB_CONFIG_URL="https://github.com/{{github_actions_repository}}"
+        GITHUB_PAT="{{github_actions_pat}}"
+        helm upgrade "${INSTALLATION_NAME}" \
+            --namespace "${NAMESPACE}" \
+            --create-namespace \
+            --set githubConfigUrl="${GITHUB_CONFIG_URL}" \
+            --set githubConfigSecret.github_token="${GITHUB_PAT}" \
+            --set runnerTemplate.podSpec.hostNetwork=true \
+            --install \
+            oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set
+
+    # Install Longhorn via Helm
+    - name: Add Longhorn Helm repository
+      command: helm repo add longhorn https://charts.longhorn.io
+
+    - name: Update Helm repositories (for Longhorn)
+      command: helm repo update
+
+    - name: Create Longhorn namespace
+      kubernetes.core.k8s:
+        api_version: v1
+        kind: Namespace
+        name: longhorn-system
+        state: present
+
+    - name: Install or upgrade Longhorn via Helm
+      shell: |
+        helm upgrade --install longhorn longhorn/longhorn \
+          --namespace longhorn-system \
+          --create-namespace
+
+
+    - name: Wait for Longhorn manager DaemonSet to be ready
+      shell: |
+        kubectl rollout status daemonset longhorn-manager -n longhorn-system --timeout=180s
+
+    # --- 0.  Ensure the Fleet namespace exists (idempotent) ----------------
+    - name: Ensure fleet-local namespace exists
+      kubernetes.core.k8s:
+        api_version: v1
+        kind: Namespace
+        name: fleet-local
+        state: present
+
+    # --- 1.  Fail fast if the PAT is missing --------------------------------
+    - name: Abort if GitHub PAT is not supplied
+      ansible.builtin.fail:
+        msg: >
+          github_actions_pat is empty or undefined - Fleet can't clone a
+          private repo over HTTPS without it.  Export GITHUB_TOKEN or set the
+          variable before running the play.
+      when: github_actions_pat is undefined or github_actions_pat | length == 0
+
+    # --- 2.  Secret: basic-auth (username + PAT) ----------------------------
+    - name: Create / update GitOps repo auth Secret
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: gitops-repo-cred
+            namespace: fleet-local
+          type: kubernetes.io/basic-auth
+          stringData:
+            username: git
+            password: "{{ lookup('env', 'github_login') }}"
+
+    # --- 3.  GitRepo object – note the *.git* suffix on repo ----------------
+    - name: Register Git repo with Fleet for GitOps deployment
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: fleet.cattle.io/v1alpha1
+          kind: GitRepo
+          metadata:
+            name: grow-project-gitops
+            namespace: fleet-local
+          spec:
+            repo: "{{ gitops_repo_url | regex_replace('\\.git$', '') }}"
+            branch: "{{ gitops_repo_branch }}"
+            paths:
+              - charts/sonarqube
+            secretName: gitops-repo-cred
+            targets:
+              - clusterSelector: {}

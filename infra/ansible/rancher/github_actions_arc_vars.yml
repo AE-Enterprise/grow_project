@@ -1,0 +1,5 @@
+# GitHub Actions Runner Controller variables
+# Store secrets and configuration here
+
+github_actions_pat: ""
+github_actions_repository: "" # Or your-org if you want org-wide runners

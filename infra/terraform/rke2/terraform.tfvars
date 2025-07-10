@@ -1,0 +1,10 @@
+proxmox_host_api_url = "https://192.168.10.10:8006/api2/json"
+proxmox_host_name    = "zeus"
+ssh_public_key_path  = "/Users/alexelwell/Documents/SSH/zeus_template_ssh.pub"
+ssh_private_key_path = "/Users/alexelwell/Documents/SSH/zeus_template_ssh"
+template_vm_id       = 999
+ipv4_subnet          = "192.168.10.40/24"
+gateway              = "192.168.10.1"
+#Kubernetes Controller Config 
+controller_ip_address = "192.168.10.40"
+k3s_tls_san_domain    = "rancher.alexanderelwell.co.uk"

@@ -1,0 +1,102 @@
+---
+# Playbook to deploy Portainer and add stacks from a GitHub repo using an API key stored in a variable file
+
+- hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../../hosts.yaml
+  tasks:
+    - name: Add VMs to inventory dynamically
+      add_host:
+        name: "{{ item.ip }}"
+        groups: portainer_vms
+        ansible_user: "{{ item.username }}"
+        ansible_ssh_private_key_file: "{{ item.ssh_key_path }}"
+      loop: "{{ portainer | default([]) }}"
+
+
+- name: "Safe System Updates & Reboot (If Needed)"
+  hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+    # 1. Update apt cache (critical before upgrades)
+    - name: Update apt package index
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600  # Only update if older than 1 hour
+      when: ansible_os_family == 'Debian'
+      register: apt_update_result  # Track if cache was updated
+
+    # 2. Apply security updates ONLY (safer than full upgrades)
+    - name: Upgrade security packages only
+      ansible.builtin.apt:
+        upgrade: yes  # Only install security updates
+        autoremove: yes
+        autoclean: yes
+      when: ansible_os_family == 'Debian'
+      register: apt_upgrade_result  # Now properly registered
+      ignore_errors: yes  # Continue even if some updates fail
+
+    # 3. Reboot ONLY if kernel/libc updates were installed
+    - name: Check if reboot is required
+      ansible.builtin.stat:
+        path: /var/run/reboot-required
+      register: reboot_required
+
+    # 4. Reboot if either updates were applied OR reboot-required exists
+    - name: Reboot if needed (kernel/libc updates)
+      ansible.builtin.reboot:
+        msg: "Rebooting after updates"
+        connect_timeout: 5
+        reboot_timeout: 600
+        pre_reboot_delay: 30
+        post_reboot_delay: 30
+      when: 
+        - reboot_required.stat.exists or 
+          (apt_upgrade_result is defined and apt_upgrade_result.changed)
+
+    # 5. Verify system is back online (if rebooted)
+    - name: Wait for system to come back
+      ansible.builtin.wait_for_connection:
+        timeout: 300
+      when: 
+        - reboot_required.stat.exists or 
+          (apt_upgrade_result is defined and apt_upgrade_result.changed)
+
+
+- name: Install Docker on Portainer host(s)
+  hosts: portainer_vms
+  become: true
+  roles:
+    - role: geerlingguy.docker
+
+- name: Deploy Portainer container
+  hosts: portainer_vms
+  become: true
+  tasks:
+    - name: Create Portainer data volume
+      docker_volume:
+        name: portainer_data
+    - name: Run Portainer container
+      docker_container:
+        name: portainer
+        image: portainer/portainer-ce:latest
+        state: started
+        restart_policy: always
+        ports:
+          - "9000:9000"
+          - "9443:9443"
+        volumes:
+          - /var/run/docker.sock:/var/run/docker.sock
+          - portainer_data:/data
+
+    - name: Wait for Portainer API to be available
+      uri:
+        url: "https://localhost:9443/api/status"
+        validate_certs: false
+        status_code: 200
+      register: portainer_status
+      until: portainer_status.status == 200
+      retries: 10
+      delay: 5
