@@ -18,7 +18,7 @@ kubernetes_workers:
     ssh_key_path: /Users/alexelwell/Documents/SSH/zeus_template_ssh
     gateway: 192.168.10.1
     tags: ["rancher", "docker"]
-    vcpu: 4
+    vcpu: 5
     memory: 4096
     disk_size: 32
     disk_device: "scsi0"
@@ -29,7 +29,7 @@ kubernetes_workers:
     ssh_key_path: /Users/alexelwell/Documents/SSH/zeus_template_ssh
     gateway: 192.168.10.1
     tags: ["rancher", "docker"]
-    vcpu: 4
+    vcpu: 5
     memory: 4096
     disk_size: 32
     disk_device: "scsi0"
@@ -40,7 +40,7 @@ kubernetes_workers:
     ssh_key_path: /Users/alexelwell/Documents/SSH/zeus_template_ssh
     gateway: 192.168.10.1
     tags: ["rancher", "docker"]
-    vcpu: 4
+    vcpu: 5
     memory: 4096
     disk_size: 32
     disk_device: "scsi0"

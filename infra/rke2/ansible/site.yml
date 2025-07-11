@@ -219,7 +219,7 @@
     
     - name: Label worker nodes with role=worker
       command: kubectl label node {{ item }} node-role.kubernetes.io/worker= --overwrite
-      loop: "{{ groups['workers'] }}"
+      loop: "{{ groups['workers'] + groups['masters'] }}"
       become: true
     
     - name: Print RKE2 status
@@ -378,10 +378,14 @@
           --create-namespace
 
 
-    - name: Wait for Longhorn manager DaemonSet to be ready
+    - name: Wait for Fleet GitRepo CRD to be available
       shell: |
-        kubectl rollout status daemonset longhorn-manager -n longhorn-system --timeout=180s
-
+        kubectl get crd gitrepos.fleet.cattle.io
+      register: fleet_crd_check
+      retries: 10
+      delay: 3
+      until: fleet_crd_check.rc == 0
+      
     - name: Ensure fleet-local namespace exists
       kubernetes.core.k8s:
         api_version: v1
