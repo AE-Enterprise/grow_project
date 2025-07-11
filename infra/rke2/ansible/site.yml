@@ -237,7 +237,7 @@
   vars_prompt:
     - name: github_actions_pat
       prompt: "Enter your GitHub Actions Personal Access Token (PAT) with 'repo' scope"
-      private: yes
+      private: no
   vars:
     rancher_namespace: cattle-system
     rancher_hostname: rancher.dev.alexanderelwell.co.uk
@@ -382,7 +382,6 @@
       shell: |
         kubectl rollout status daemonset longhorn-manager -n longhorn-system --timeout=180s
 
-    # --- 0.  Ensure the Fleet namespace exists (idempotent) ----------------
     - name: Ensure fleet-local namespace exists
       kubernetes.core.k8s:
         api_version: v1
@@ -412,7 +411,7 @@
           type: kubernetes.io/basic-auth
           stringData:
             username: git
-            password: "{{ lookup('env', 'github_login') }}"
+            password: "{{github_actions_pat}}"
 
     # --- 3.  GitRepo object – note the *.git* suffix on repo ----------------
     - name: Register Git repo with Fleet for GitOps deployment
@@ -429,6 +428,6 @@
             branch: "{{ gitops_repo_branch }}"
             paths:
               - charts/sonarqube
-            secretName: gitops-repo-cred
+            clientSecretName: gitops-repo-cred
             targets:
               - clusterSelector: {}

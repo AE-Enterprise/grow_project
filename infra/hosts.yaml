@@ -52,34 +52,8 @@ portainer:
     ssh_key_path: /Users/alexelwell/Documents/SSH/zeus_template_ssh
     gateway: 192.168.10.1
     tags: ["rancher", "docker"]
-    vcpu: 2
-    memory: 2048
-    disk_size: 16
+    vcpu: 4
+    memory: 6144
+    disk_size: 32
     disk_device: "scsi0"
-    dns: 192.168.10.1
-general_purpose:
-  - name: test-ubuntu-1
-    ip: 192.168.10.70
-    username: Admin
-    ssh_key_path: /Users/alexelwell/Documents/SSH/zeus_template_ssh
-    gateway: 192.168.10.1
-    tags: ["rancher", "docker"]
-    vcpu: 1
-    memory: 1024
-    disk_size: 8
-    disk_device: "scsi0"
-    # vlan_tag: 130
-    dns: 192.168.10.1
-sonarqube:
-  - name: sonarqube
-    ip: 192.168.10.80
-    username: Admin
-    ssh_key_path: /Users/alexelwell/Documents/SSH/zeus_template_ssh
-    gateway: 192.168.10.1
-    tags: ["sonarqube"]
-    vcpu: 1
-    memory: 2048
-    disk_size: 8
-    disk_device: "scsi0"
-    # vlan_tag: 130
     dns: 192.168.10.1
