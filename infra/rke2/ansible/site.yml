@@ -431,7 +431,7 @@
             repo: "{{ gitops_repo_url | regex_replace('\\.git$', '') }}"
             branch: "{{ gitops_repo_branch }}"
             paths:
-              - charts/sonarqube
+              - charts/api-gateway
             clientSecretName: gitops-repo-cred
             targets:
               - clusterSelector: {}
