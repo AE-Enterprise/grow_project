@@ -4,7 +4,7 @@ WORKDIR /app
 # Copy only required files
 COPY packages.txt /app/
 COPY manage.py /app/
-COPY inventory/*.py /app/inventory/
+COPY api/*.py /app/api/
 COPY plants_service/*.py /app/plants_service/
 # Do not copy .env
 
