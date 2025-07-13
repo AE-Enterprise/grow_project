@@ -39,3 +39,53 @@ For more details, see the [Kubernetes documentation on imagePullSecrets](https:/
 
 # Check for pod deployment to Rancher Desktop
 nerdctl --namespace k8s.io images         
+
+
+
+# Dev Environment
+
+To run the dev enviroment, use the following command: 
+first time: 
+Create namespace
+
+kubectl create namespace grow-dev
+
+Install app to namespace:
+helm install api-gateway ./charts/api-gateway-dev -n grow-dev
+
+To then update and upgrade the charts use:
+helm upgrade api-gateway ./charts/api-gateway-dev -n grow-dev
+
+
+
+# to deploy prod from scratch
+```sh
+kubectl create namespace grow
+
+kubectl create secret docker-registry ghcr-secret \
+    --docker-server=ghcr.io \
+    --docker-username=<YOUR_GITHUB_USERNAME> \
+    --docker-password=<YOUR_GITHUB_PAT> \
+    --docker-email=<YOUR_EMAIL> \
+    -n grow
+
+helm install api-gateway ./charts/api-gateway -n grow
+
+# to Update deployment charts:
+helm upgrade api-gateway ./charts/api-gateway -n grow
+
+```
+# to deploy dev from scatch:
+
+
+First - build using ./build.sh in selected API
+```sh
+
+kubectl create namespace grow-dev
+
+helm install api-gateway ./charts/api-gateway-dev -n grow-dev
+
+#To Upgrade dev environment 
+helm upgrade api-gateway ./charts/api-gateway-dev -n grow-dev
+
+```
