@@ -6,4 +6,8 @@ imagePullSecrets:
   - name: ghcr-secret
 
 env:
-  DATABASE_URL: "postgres://user:password@plants-db:5432/plants"
+  DB_NAME: grow_project
+  DB_USER: postgres
+  DB_PASSWORD: postgres #TODO - make this a secret!
+  DB_HOST: localhost
+  DB_PORT: 5432
