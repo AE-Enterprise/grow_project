@@ -13,7 +13,7 @@
     - name: Add Kubernetes controller
       add_host:
         name: "{{ item.name }}"
-        ansible_host: "{{ item.ip }}"  
+        ansible_host: "{{ item.ip }}"
         groups:
           - masters
           - k8s_cluster
@@ -24,7 +24,7 @@
     - name: Add Kubernetes workers
       add_host:
         name: "{{ item.name }}"
-        ansible_host: "{{ item.ip }}"  
+        ansible_host: "{{ item.ip }}"
         groups:
           - workers
           - k8s_cluster
@@ -71,16 +71,16 @@
         reboot_timeout: 600
         pre_reboot_delay: 30
         post_reboot_delay: 30
-      when: 
-        - reboot_required.stat.exists or 
+      when:
+        - reboot_required.stat.exists or
           (apt_upgrade_result is defined and apt_upgrade_result.changed)
 
     # 5. Verify system is back online (if rebooted)
     - name: Wait for system to come back
       ansible.builtin.wait_for_connection:
         timeout: 300
-      when: 
-        - reboot_required.stat.exists or 
+      when:
+        - reboot_required.stat.exists or
           (apt_upgrade_result is defined and apt_upgrade_result.changed)
 
 
@@ -209,19 +209,19 @@
         dest: /usr/local/bin/kubectl
         state: link
         force: true
-        
+
     - name: Check RKE2 status
       command: kubectl get nodes
       register: rke2_status
       when: inventory_hostname in groups['masters']
       become: true
       become_user: root
-    
+
     - name: Label worker nodes with role=worker
       command: kubectl label node {{ item }} node-role.kubernetes.io/worker= --overwrite
       loop: "{{ groups['workers'] + groups['masters'] }}"
       become: true
-    
+
     - name: Print RKE2 status
       debug:
         var: rke2_status.stdout_lines
@@ -385,7 +385,7 @@
       retries: 10
       delay: 3
       until: fleet_crd_check.rc == 0
-      
+
     - name: Ensure fleet-local namespace exists
       kubernetes.core.k8s:
         api_version: v1

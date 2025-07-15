@@ -52,16 +52,16 @@
         reboot_timeout: 600
         pre_reboot_delay: 30
         post_reboot_delay: 30
-      when: 
-        - reboot_required.stat.exists or 
+      when:
+        - reboot_required.stat.exists or
           (apt_upgrade_result is defined and apt_upgrade_result.changed)
 
     # 5. Verify system is back online (if rebooted)
     - name: Wait for system to come back
       ansible.builtin.wait_for_connection:
         timeout: 300
-      when: 
-        - reboot_required.stat.exists or 
+      when:
+        - reboot_required.stat.exists or
           (apt_upgrade_result is defined and apt_upgrade_result.changed)
 
 

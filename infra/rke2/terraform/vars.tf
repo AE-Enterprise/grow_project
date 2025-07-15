@@ -1,4 +1,4 @@
-# Proxmox Vars 
+# Proxmox Vars
 variable "proxmox_host_api_url" {
   description = "Proxmox API endpoint URL"
   type        = string
@@ -14,7 +14,7 @@ variable "template_vm_id" {
   type        = number
 }
 
-variable "proxmox_host_name" { 
+variable "proxmox_host_name" {
   description = "Proxmox node name"
   type        = string
 }

@@ -7,19 +7,21 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Plant',
+            name="Plant",
             fields=[
-                ('id', models.UUIDField(editable=False, primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=100)),
-                ('species', models.CharField(max_length=100)),
-                ('date_planted', models.DateField()),
-                ('location', models.CharField(blank=True, max_length=100, null=True)),
-                ('notes', models.TextField(blank=True, null=True)),
+                (
+                    "id",
+                    models.UUIDField(editable=False, primary_key=True, serialize=False),
+                ),
+                ("name", models.CharField(max_length=100)),
+                ("species", models.CharField(max_length=100)),
+                ("date_planted", models.DateField()),
+                ("location", models.CharField(blank=True, max_length=100, null=True)),
+                ("notes", models.TextField(blank=True, null=True)),
             ],
         ),
     ]

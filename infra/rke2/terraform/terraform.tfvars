@@ -5,6 +5,6 @@ ssh_private_key_path = "/Users/alexelwell/Documents/SSH/zeus_template_ssh"
 template_vm_id       = 999
 ipv4_subnet          = "192.168.10.40/24"
 gateway              = "192.168.10.1"
-#Kubernetes Controller Config 
+#Kubernetes Controller Config
 controller_ip_address = "192.168.10.40"
 k3s_tls_san_domain    = "rancher.alexanderelwell.co.uk"

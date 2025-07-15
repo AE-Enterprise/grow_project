@@ -38,14 +38,14 @@ For more details, see the [Kubernetes documentation on imagePullSecrets](https:/
 
 
 # Check for pod deployment to Rancher Desktop
-nerdctl --namespace k8s.io images         
+nerdctl --namespace k8s.io images
 
 
 
 # Dev Environment
 
-To run the dev enviroment, use the following command: 
-first time: 
+To run the dev enviroment, use the following command:
+first time:
 Create namespace
 
 kubectl create namespace grow-dev
@@ -85,7 +85,7 @@ kubectl create namespace grow-dev
 
 helm install api-gateway ./charts/api-gateway-dev -n grow-dev
 
-#To Upgrade dev environment 
+#To Upgrade dev environment
 helm upgrade api-gateway ./charts/api-gateway-dev -n grow-dev
 
 ```

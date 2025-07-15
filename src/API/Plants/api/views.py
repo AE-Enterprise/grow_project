@@ -10,11 +10,13 @@ from .serializers import PlantSerializer
 
 
 class PlantListView(generics.ListAPIView[Plant]):
-    '''API to list all plants'''
+    """API to list all plants"""
+
     queryset = Plant.objects.all()
     serializer_class = PlantSerializer
 
-@api_view(['GET'])
+
+@api_view(["GET"])
 def get_all_plants(_: Request) -> Response:
     """
     Retrieve all plants in the database.
@@ -24,7 +26,7 @@ def get_all_plants(_: Request) -> Response:
     return Response(serializer.data)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 def get_plant_by_id(_: Request, pk: uuid) -> JsonResponse:
     """
     Retrieve a plant by its ID.
@@ -35,7 +37,7 @@ def get_plant_by_id(_: Request, pk: uuid) -> JsonResponse:
     return JsonResponse(serializer.data)
 
 
-@api_view(['PUT'])
+@api_view(["PUT"])
 def put_plant(request: Request) -> JsonResponse:
     """
     Create a new plant.
@@ -45,5 +47,3 @@ def put_plant(request: Request) -> JsonResponse:
         serializer.save()
         return JsonResponse(serializer.data, status=201)
     return JsonResponse(serializer.errors, status=400)
-
-

@@ -39,4 +39,3 @@ resource "proxmox_virtual_environment_vm" "k3s_controller" {
         vlan_id = lookup(each.value, "vlan_tag", null)
     }
 }
-
