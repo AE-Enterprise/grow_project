@@ -9,21 +9,21 @@ spec:
   rules:
     - http:
         paths:
-          - path: /plants(/|$)(.*)
+          - path: /plants
             pathType: Prefix
             backend:
               service:
                 name: plants
                 port:
                   number: 8001
-          - path: /auth(/|$)(.*)
+          - path: /auth
             pathType: Prefix
             backend:
               service:
                 name: auth
                 port:
                   number: 8001
-          - path: /users(/|$)(.*)
+          - path: /users
             pathType: Prefix
             backend:
               service:
