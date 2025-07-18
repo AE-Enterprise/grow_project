@@ -49,27 +49,16 @@ jobs:
         run: |
           while read dockerfile; do
             dir=$(dirname "$dockerfile")
-            name=$(echo "$dir" | sed 's|^\./||; s|/|-|g')  # Convert path to valid image suffix
-            name_lower=$(echo "$name" | tr '[:upper:]' '[:lower:]')
             image_name_lower=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
-            full_image="${{ env.REGISTRY }}/$image_name_lower:${name_lower:-root}"
+            latest_prod_image="${{ env.REGISTRY }}/$image_name_lower:latest-prod"
 
-            echo "Building and pushing $full_image from $dir"
+            echo "Building and pushing $latest_prod_image from $dir"
 
             docker buildx build \
-              --push=${{ github.event_name != 'pull_request' }} \
-              --tag "$full_image" \
+              --push=true \
+              --tag "$latest_prod_image" \
               --file "$dockerfile" \
               "$dir"
 
-            echo "$full_image" >> images.txt
+            echo "$latest_prod_image" >> images.txt
           done < dockerfiles.txt
-
-      - name: Sign images (not on PRs)
-        if: github.event_name != 'pull_request'
-        run: |
-          while read image; do
-            digest=$(crane digest "$image")
-            echo "Signing $image@$digest"
-            cosign sign --yes "$image@$digest"
-          done < images.txt
