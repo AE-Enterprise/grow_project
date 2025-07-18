@@ -6,15 +6,15 @@ ingress:
   hosts:
     # - host: yourdomain.com # or just omit for IP-based access
     paths:
-      - path: /plants(/|$)(.*)
+      - path: /plants
         pathType: Prefix
         serviceName: plants
         servicePort: 8001
-      - path: /auth(/|$)(.*)
+      - path: /auth
         pathType: Prefix
         serviceName: auth
         servicePort: 8001
-      - path: /users(/|$)(.*)
+      - path: /users
         pathType: Prefix
         serviceName: users
         servicePort: 8001
