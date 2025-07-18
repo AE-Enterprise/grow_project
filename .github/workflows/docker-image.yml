@@ -41,7 +41,7 @@ jobs:
       - name: Find all Dockerfiles
         id: find_dockerfiles
         run: |
-          find . -name 'Dockerfile' > dockerfiles.txt
+          find . -name 'Dockerfile.prod' > dockerfiles.txt
           echo "Found Dockerfiles:"
           cat dockerfiles.txt
 
