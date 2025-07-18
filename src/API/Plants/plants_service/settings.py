@@ -22,9 +22,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = (
-    "django-insecure-jc)!p81*t%q3aod!_&3)ofgo-_t!49s@ve9ncd)3r6n!yla8kt"  # nosec
-)
+
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-insecure-key")  # nosec
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -85,9 +84,9 @@ load_dotenv(os.path.join(BASE_DIR, ".env"))
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DB_NAME", "plants_db"),
-        "USER": os.getenv("DB_USER", "your_db_user"),
-        "PASSWORD": os.getenv("DB_PASSWORD", "your_db_password"),
+        "NAME": os.getenv("DB_NAME", "grow_project"),
+        "USER": os.getenv("DB_USER", "postgres"),
+        "PASSWORD": os.getenv("DB_PASSWORD", "postgres"),
         "HOST": os.getenv("DB_HOST", "localhost"),
         "PORT": os.getenv("DB_PORT", "5432"),
     }
