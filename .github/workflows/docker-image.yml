@@ -50,7 +50,8 @@ jobs:
           while read dockerfile; do
             dir=$(dirname "$dockerfile")
             name=$(echo "$dir" | sed 's|^\./||; s|/|-|g')  # Convert path to valid image suffix
-            full_image="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${name:-root}"
+            name_lower=$(echo "$name" | tr '[:upper:]' '[:lower:]')
+            full_image="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${name_lower:-root}"
 
             echo "Building and pushing $full_image from $dir"
 
