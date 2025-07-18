@@ -5,24 +5,69 @@ on:
       - main
   workflow_dispatch:
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
 jobs:
-  build:
-    name: Build and Deploy to GitHub Container Storage
-    runs-on: arc-runner-set
+  build-all-dockerfiles:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
 
     steps:
-      - name: Install Docker
-        run: |
-          curl -fsSL https://get.docker.com -o get-docker.sh
-          sh get-docker.sh
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: actions/checkout@v4
+      - name: Install cosign (not on PRs)
+        if: github.event_name != 'pull_request'
+        uses: sigstore/cosign-installer@v3.5.0
         with:
-          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
-      - uses: Docker/build-push-action@v4
+          cosign-release: "v2.2.4"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3.0.0
+
+      - name: Log in to GHCR (not on PRs)
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3.0.0
         with:
-          context: .
-          push: true
-          tags: ghcr.io/${{ github.repository_owner }}/grow_project:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Find all Dockerfiles
+        id: find_dockerfiles
+        run: |
+          find . -name 'Dockerfile' > dockerfiles.txt
+          echo "Found Dockerfiles:"
+          cat dockerfiles.txt
+
+      - name: Build and push all Docker images
+        run: |
+          while read dockerfile; do
+            dir=$(dirname "$dockerfile")
+            name=$(echo "$dir" | sed 's|^\./||; s|/|-|g')  # Convert path to valid image suffix
+            full_image="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${name:-root}"
+
+            echo "Building and pushing $full_image from $dir"
+
+            docker buildx build \
+              --push=${{ github.event_name != 'pull_request' }} \
+              --tag "$full_image" \
+              --file "$dockerfile" \
+              "$dir"
+
+            echo "$full_image" >> images.txt
+          done < dockerfiles.txt
+
+      - name: Sign images (not on PRs)
+        if: github.event_name != 'pull_request'
+        run: |
+          while read image; do
+            digest=$(crane digest "$image")
+            echo "Signing $image@$digest"
+            cosign sign --yes "$image@$digest"
+          done < images.txt
