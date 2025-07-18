@@ -6,3 +6,4 @@ drf_spectacular
 djangorestframework
 psycopg2-binary
 djangorestframework-stubs
+bandit

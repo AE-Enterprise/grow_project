@@ -6,6 +6,11 @@ repos:
         entry: bash -c 'for d in charts/*/; do [ -f "$d/Chart.yaml" ] && helm lint "$d"; done'
         language: system
         files: ^charts/.*/templates/.*\.ya?ml$
+      - id: django-check
+        name: Run python manage.py check for all API projects
+        entry: bash -c 'find src/API -name manage.py -execdir python manage.py check \;'
+        language: system
+        types: [python]
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v3.2.0
@@ -20,6 +25,12 @@ repos:
     rev: 22.10.0
     hooks:
       - id: black
+
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.4
+    hooks:
+      - id: bandit
+        additional_dependencies: ["toml"]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.10.0
