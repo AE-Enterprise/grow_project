@@ -10,7 +10,7 @@ spec:
     - http:
         paths:
           - path: /plants(/|$)(.*)
-            pathType: Prefix
+            pathType: ImplementationSpecific
             backend:
               service:
                 name: plants
