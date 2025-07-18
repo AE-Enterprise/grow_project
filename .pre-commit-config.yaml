@@ -1,17 +1,26 @@
-# See https://pre-commit.com for more information
-# See https://pre-commit.com/hooks.html for more hooks
 repos:
+  - repo: local
+    hooks:
+      - id: helm-lint
+        name: Run helm lint on charts
+        entry: bash -c 'for d in charts/*/; do [ -f "$d/Chart.yaml" ] && helm lint "$d"; done'
+        language: system
+        files: ^charts/.*/templates/.*\.ya?ml$
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v3.2.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
+        exclude: "^charts/"
       - id: check-added-large-files
+
   - repo: https://github.com/psf/black
     rev: 22.10.0
     hooks:
       - id: black
+
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.10.0
     hooks:
@@ -21,3 +30,8 @@ repos:
         additional_dependencies:
           - django
           - django-stubs
+          - dotenv
+          - drf_spectacular
+          - djangorestframework
+          - psycopg2-binary
+          - djangorestframework-stubs

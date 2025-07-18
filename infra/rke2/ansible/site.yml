@@ -43,19 +43,19 @@
     - name: Update apt package index
       ansible.builtin.apt:
         update_cache: yes
-        cache_valid_time: 3600  # Only update if older than 1 hour
+        cache_valid_time: 3600 # Only update if older than 1 hour
       when: ansible_os_family == 'Debian'
-      register: apt_update_result  # Track if cache was updated
+      register: apt_update_result # Track if cache was updated
 
     # 2. Apply security updates ONLY (safer than full upgrades)
     - name: Upgrade security packages only
       ansible.builtin.apt:
-        upgrade: yes  # Only install security updates
+        upgrade: yes # Only install security updates
         autoremove: yes
         autoclean: yes
       when: ansible_os_family == 'Debian'
-      register: apt_upgrade_result  # Now properly registered
-      ignore_errors: yes  # Continue even if some updates fail
+      register: apt_upgrade_result # Now properly registered
+      ignore_errors: yes # Continue even if some updates fail
 
     # 3. Reboot ONLY if kernel/libc updates were installed
     - name: Check if reboot is required
@@ -82,7 +82,6 @@
       when:
         - reboot_required.stat.exists or
           (apt_upgrade_result is defined and apt_upgrade_result.changed)
-
 
 # Run install script for RKE2 as sudo
 
@@ -128,7 +127,7 @@
         state: directory
         owner: root
         group: root
-        mode: '0755'
+        mode: "0755"
       become: true
       become_user: root
 
@@ -169,7 +168,6 @@
       become: true
       become_user: root
 
-
 - name: Update configs + kubectl + Check for RKE2 status on masters
   hosts: masters
   gather_facts: false
@@ -177,29 +175,28 @@
   vars:
     k8s_cluster: "rancher-cluster"
   tasks:
-
     - name: Set correct permissions on rke2.yaml
       ansible.builtin.file:
         path: /etc/rancher/rke2/rke2.yaml
-        mode: '0644'
+        mode: "0644"
 
     - name: Create .kube directory for user
       ansible.builtin.file:
         path: ~/.kube
         state: directory
-        mode: '0700'
+        mode: "0700"
 
     - name: Copy kubeconfig to user directory
       ansible.builtin.copy:
         src: /etc/rancher/rke2/rke2.yaml
         dest: ~/.kube/config
         remote_src: yes
-        mode: '0600'
+        mode: "0600"
 
     - name: Update KUBECONFIG in shell profile
       ansible.builtin.lineinfile:
         path: ~/.bashrc
-        line: 'export KUBECONFIG=~/.kube/config'
+        line: "export KUBECONFIG=~/.kube/config"
         state: present
 
     - name: Symlink kubectl to /local/bin/kubectl
@@ -227,7 +224,6 @@
         var: rke2_status.stdout_lines
       when: inventory_hostname in groups['masters']
 
-
 - name: Install Rancher UI via Helm
   hosts: masters
   become: true
@@ -242,7 +238,6 @@
     rancher_namespace: cattle-system
     rancher_hostname: rancher.dev.alexanderelwell.co.uk
   tasks:
-
     - name: Ensure python3-pip is installed
       apt:
         name: python3-pip
@@ -376,7 +371,6 @@
         helm upgrade --install longhorn longhorn/longhorn \
           --namespace longhorn-system \
           --create-namespace
-
 
     - name: Wait for Fleet GitRepo CRD to be available
       shell: |

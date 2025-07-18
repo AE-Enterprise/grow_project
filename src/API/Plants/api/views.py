@@ -27,7 +27,7 @@ def get_all_plants(_: Request) -> Response:
 
 
 @api_view(["GET"])
-def get_plant_by_id(_: Request, pk: uuid) -> JsonResponse:
+def get_plant_by_id(_: Request, pk: uuid.UUID) -> JsonResponse:
     """
     Retrieve a plant by its ID.
     """

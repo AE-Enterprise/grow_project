@@ -1,6 +1,6 @@
 """URL routing for the API app."""
 
-from api import views
+from . import views
 from django.urls import path
 
 urlpatterns = [

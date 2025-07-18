@@ -1,3 +1,8 @@
 pre-commit
 django-stubs[compatible-mypy]
 djangorestframework-stubs[compatible-mypy]
+dotenv
+drf_spectacular
+djangorestframework
+psycopg2-binary
+djangorestframework-stubs

@@ -1,3 +1,4 @@
+# mypy: disable-error-code=var-annotated
 """Plant API Models"""
 
 from django.db import models

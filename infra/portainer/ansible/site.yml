@@ -14,7 +14,6 @@
         ansible_ssh_private_key_file: "{{ item.ssh_key_path }}"
       loop: "{{ portainer | default([]) }}"
 
-
 - name: "Safe System Updates & Reboot (If Needed)"
   hosts: all
   become: true
@@ -24,19 +23,19 @@
     - name: Update apt package index
       ansible.builtin.apt:
         update_cache: yes
-        cache_valid_time: 3600  # Only update if older than 1 hour
+        cache_valid_time: 3600 # Only update if older than 1 hour
       when: ansible_os_family == 'Debian'
-      register: apt_update_result  # Track if cache was updated
+      register: apt_update_result # Track if cache was updated
 
     # 2. Apply security updates ONLY (safer than full upgrades)
     - name: Upgrade security packages only
       ansible.builtin.apt:
-        upgrade: yes  # Only install security updates
+        upgrade: yes # Only install security updates
         autoremove: yes
         autoclean: yes
       when: ansible_os_family == 'Debian'
-      register: apt_upgrade_result  # Now properly registered
-      ignore_errors: yes  # Continue even if some updates fail
+      register: apt_upgrade_result # Now properly registered
+      ignore_errors: yes # Continue even if some updates fail
 
     # 3. Reboot ONLY if kernel/libc updates were installed
     - name: Check if reboot is required
@@ -63,7 +62,6 @@
       when:
         - reboot_required.stat.exists or
           (apt_upgrade_result is defined and apt_upgrade_result.changed)
-
 
 - name: Install Docker on Portainer host(s)
   hosts: portainer_vms
