@@ -6,23 +6,23 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: {{ .Chart.Name }}
+      app: {{.Chart.Name}}
   template:
     metadata:
       labels:
-        app: {{ .Chart.Name }}
+        app: {{.Chart.Name}}
     spec:
-      serviceAccountName: {{ .Chart.Name }}
+      serviceAccountName: {{.Chart.Name}}
       imagePullSecrets:
         - name: ghcr-secret
       containers:
-        - name: {{ .Chart.Name }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+        - name: {{.Chart.Name}}
+          image: "{{ .Values.image.repository }}:{{.Values.image.tag}}"
+          imagePullPolicy: {{.Values.image.pullPolicy}}
           ports:
             - containerPort: 8001
           env:
-{{- range $key, $value := .Values.env }}
+{{- range $key, $value := .Values.env}}
             - name: {{ $key }}
               value: "{{ $value }}"
 {{- end }}

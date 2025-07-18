@@ -1,6 +1,6 @@
 image:
-  repository: ghcr.io/ae-enterprise/grow_project/plants
-  tag: latest
+  repository: ghcr.io/ae-enterprise/grow_project
+  tag: latest-prod
   pullPolicy: IfNotPresent
 imagePullSecrets:
   - name: ghcr-secret
