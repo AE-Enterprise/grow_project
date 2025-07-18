@@ -10,21 +10,21 @@ spec:
     - http:
         paths:
           - path: /plants(/|$)(.*)
-            pathType: Prefix
+            pathType: ImplementationSpecific
             backend:
               service:
                 name: plants
                 port:
                   number: 8001
           - path: /auth(/|$)(.*)
-            pathType: Prefix
+            pathType: ImplementationSpecific
             backend:
               service:
                 name: auth
                 port:
                   number: 8001
           - path: /users(/|$)(.*)
-            pathType: Prefix
+            pathType: ImplementationSpecific
             backend:
               service:
                 name: users

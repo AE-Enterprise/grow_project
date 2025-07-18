@@ -1,0 +1,11 @@
+image:
+  repository: auth
+  tag: latest-dev
+  pullPolicy: Never
+
+env:
+  DB_NAME: grow_project
+  DB_USER: postgres
+  DB_PASSWORD: postgres
+  DB_HOST: host.docker.internal
+  DB_PORT: 5432
