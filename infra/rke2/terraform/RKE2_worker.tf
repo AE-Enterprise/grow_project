@@ -1,7 +1,8 @@
 resource "proxmox_virtual_environment_vm" "k3s_worker" {
-  for_each = { for server in local.workers : server.name => server }
+  for_each  = { for server in local.workers : server.name => server }
   name      = each.value.name
   node_name = var.proxmox_host_name
+  tags      = each.value.tags
   clone {
     vm_id = var.template_vm_id
   }
@@ -17,10 +18,10 @@ resource "proxmox_virtual_environment_vm" "k3s_worker" {
       keys     = [trimspace(data.local_file.ssh_public_key.content)]
     }
     dns {
-        servers = [
-            each.value.dns,
-            "1.1.1.1",
-        ]
+      servers = [
+        each.value.dns,
+        "1.1.1.1",
+      ]
     }
   }
   cpu {
@@ -35,7 +36,7 @@ resource "proxmox_virtual_environment_vm" "k3s_worker" {
     interface    = lookup(each.value, "disk_device", "scsi0")
   }
   network_device {
-    bridge = "vmbr0"
+    bridge  = "vmbr0"
     vlan_id = lookup(each.value, "vlan_tag", null)
   }
 }
