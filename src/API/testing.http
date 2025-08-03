@@ -1,0 +1,14 @@
+### 1. Get JWT token
+POST http://127.0.0.1:8001/api/token/
+Content-Type: application/json
+
+{
+    "username": "alex",
+    "password": "alex"
+}
+
+# @extract(jwt_token = $.access)
+
+### 2. Use JWT token to call protected endpoint
+GET http://127.0.0.1:8000/api/
+Authorization: Bearer {{jwt_token}}

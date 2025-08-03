@@ -7,7 +7,7 @@ from django.db import models
 class Plant(models.Model):
     """Model representing a plant in the API."""
 
-    id = models.UUIDField(primary_key=True, editable=False)
+    id = models.UUIDField(primary_key=True, editable=False, auto_created=True)
     name = models.CharField(max_length=100)
     species = models.CharField(max_length=100)
     date_planted = models.DateField()

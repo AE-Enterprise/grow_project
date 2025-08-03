@@ -4,9 +4,10 @@ from rest_framework import generics
 from rest_framework.decorators import api_view
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 from django.http import JsonResponse
 from .models import Plant
-from .serializers import PlantSerializer
+from .serializers import PlantSerializer, PlantSerializergGetAll
 
 
 class PlantListView(generics.ListAPIView[Plant]):
@@ -14,10 +15,11 @@ class PlantListView(generics.ListAPIView[Plant]):
 
     queryset = Plant.objects.all()
     serializer_class = PlantSerializer
+    permission_classes = [IsAuthenticated]  #
 
 
 @api_view(["GET"])
-def get_all_plants(_: Request) -> Response:
+def get_all_detailed(_: Request) -> Response:
     """
     Retrieve all plants in the database.
     """
@@ -47,3 +49,10 @@ def put_plant(request: Request) -> JsonResponse:
         serializer.save()
         return JsonResponse(serializer.data, status=201)
     return JsonResponse(serializer.errors, status=400)
+
+
+@api_view(["GET"])
+def get_all(request: Request) -> Response:
+    plants = Plant.objects.all()
+    serializer = PlantSerializergGetAll(plants, many=True)
+    return Response(serializer.data)

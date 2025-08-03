@@ -21,3 +21,13 @@ class PlantSerializer(serializers.ModelSerializer):
         if not value:
             return "Unknown"
         return value
+
+
+class PlantSerializergGetAll(serializers.ModelSerializer):
+    """Serializer for getAll endpoint - returns a subset of data."""
+
+    class Meta:
+        """Data to be serialized."""
+
+        model = Plant
+        fields = ["id", "species"]
