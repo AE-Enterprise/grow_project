@@ -1,0 +1,42 @@
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+  hosts:
+    # - host: yourdomain.com # or just omit for IP-based access
+    paths:
+      - path: /plants(/|$)(.*)
+        pathType: Prefix
+        serviceName: plants
+        servicePort: 8001
+      - path: /auth(/|$)(.*)
+        pathType: Prefix
+        serviceName: auth
+        servicePort: 8001
+      - path: /users(/|$)(.*)
+        pathType: Prefix
+        serviceName: users
+        servicePort: 8001
+  tls: []
+
+service:
+  type: ClusterIP
+  port: 8001
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: api-gateway
+
+image:
+  repository: nginx
+  tag: "latest"
+  pullPolicy: IfNotPresent

@@ -1,0 +1,15 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+# Copy only required files
+COPY packages.txt /app/
+COPY manage.py /app/
+COPY api/*.py /app/api/
+COPY plants_service/*.py /app/plants_service/
+# Do not copy .env
+
+RUN pip install --upgrade pip && \
+    pip install -r packages.txt gunicorn
+
+EXPOSE 8001
+CMD ["gunicorn", "plants_service.wsgi:application", "--bind", "0.0.0.0:8001"]

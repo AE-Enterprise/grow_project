@@ -1,0 +1,5 @@
+github_actions_repository: "AE-Enterprise/grow_project" # Or your-org if you want org-wide runners
+gitops_secret_name: "github-pat-token-info" # Name of the secret to store these variables in
+gitops_repo_url: "https://github.com/AE-Enterprise/grow_project"
+gitops_repo_branch: "production" # Branch to use for gitops operations
+gitops_repo_namespace: "fleet-gitops" # Namespace to use for gitops operations

@@ -209,3 +209,11 @@ debug.log
 
 /infra/ansible/rancher/github_actions_arc_vars.yml
 infra/ansible/rancher/github_actions_arc_vars.yml
+
+# vs code mad settings
+.vscode/settings.json
+.sonarlint/connectedMode.json
+
+# Packer variable files (keep example)
+infra/packer/*.pkrvars.hcl
+!infra/packer/vars.example.pkrvars.hcl

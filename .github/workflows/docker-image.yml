@@ -1,26 +1,64 @@
-name: Build
+name: Build Docker
 on:
   push:
     branches:
       - main
   workflow_dispatch:
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
 jobs:
-  build:
-    name: Build and analyze
-    runs-on: arc-runner-set
+  build-all-dockerfiles:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
 
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
-      - uses: SonarSource/sonarqube-scan-action@v5
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-          SONAR_PROJECT_KEY: grow_project
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: SonarSource/sonarqube-quality-gate-action@v1
-        timeout-minutes: 5
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - name: Install cosign (not on PRs)
+        if: github.event_name != 'pull_request'
+        uses: sigstore/cosign-installer@v3.5.0
+        with:
+          cosign-release: "v2.2.4"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3.0.0
+
+      - name: Log in to GHCR (not on PRs)
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3.0.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Find all Dockerfiles
+        id: find_dockerfiles
+        run: |
+          find . -name 'Dockerfile.prod' > dockerfiles.txt
+          echo "Found Dockerfiles:"
+          cat dockerfiles.txt
+
+      - name: Build and push all Docker images
+        run: |
+          while read dockerfile; do
+            dir=$(dirname "$dockerfile")
+            image_name_lower=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
+            latest_prod_image="${{ env.REGISTRY }}/$image_name_lower:latest-prod"
+
+            echo "Building and pushing $latest_prod_image from $dir"
+
+            docker buildx build \
+              --push=true \
+              --tag "$latest_prod_image" \
+              --file "$dockerfile" \
+              "$dir"
+
+            echo "$latest_prod_image" >> images.txt
+          done < dockerfiles.txt
