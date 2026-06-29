@@ -376,8 +376,8 @@
       shell: |
         kubectl get crd gitrepos.fleet.cattle.io
       register: fleet_crd_check
-      retries: 10
-      delay: 3
+      retries: 20
+      delay: 4
       until: fleet_crd_check.rc == 0
 
     - name: Ensure fleet-local namespace exists
